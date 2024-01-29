@@ -22,7 +22,7 @@ class TextElement:
         self.metadata = metadata
 
 
-class TextRetrievalFromPdfs:
+class TextRetrievalFromPdf:
     source_filename: str
     source_dir: str
     document: Document
@@ -55,6 +55,6 @@ class TextRetrievalFromPdfs:
         return chunk_by_title(
             elements=elements,
             combine_text_under_n_chars=2000,
-            max_characters=10000,
-            new_after_n_chars=9500,
+            max_characters=6000,
+            new_after_n_chars=5500,
             overlap=500,)
