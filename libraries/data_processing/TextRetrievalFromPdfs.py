@@ -5,6 +5,7 @@ from typing import Any, Dict, List
 from fitz import fitz, Document, Page
 from unstructured.chunking import chunk_elements
 from unstructured.chunking.title import chunk_by_title
+from unstructured.partition.pdf import partition_pdf
 
 from configs.app_configs import AppConfigs
 
@@ -44,10 +45,16 @@ class TextRetrievalFromPdfs:
         return fitz.Document(path)
 
     def get_text_elements(self):
-        all_text = ""
-        for page in self.pages:
-            text = page.get_text()
-            all_text += text
+        elements = partition_pdf(
+            filename=os.path.join(self.source_dir, self.source_filename),
+            # strategy='hi_res',
+            chunking_strategy="by_title",
 
-        chunks = chunk_elements(all_text)
-        return chunk_by_title(all_text)
+        )
+
+        return chunk_by_title(
+            elements=elements,
+            combine_text_under_n_chars=2000,
+            max_characters=10000,
+            new_after_n_chars=9500,
+            overlap=500,)

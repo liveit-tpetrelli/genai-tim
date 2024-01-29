@@ -12,6 +12,7 @@ from langchain_community.document_loaders import UnstructuredFileLoader
 from langchain_core.documents import Document
 
 from configs.app_configs import AppConfigs
+from libraries.data_processing.ImagesRetrievalFromPdf import ImagesRetrievalFromPdf
 from libraries.data_processing.TextRetrievalFromPdfs import TextRetrievalFromPdfs
 
 app_configs = AppConfigs()
@@ -84,8 +85,11 @@ if __name__ == '__main__':
     # )
     # token_splits = token_splitter.split_documents(docs)
     # print(token_splits)
-    with TextRetrievalFromPdfs("Manuale operativo iliad FTTH (1).pdf") as ret:
-        blocks = ret.get_text_elements()
+    # with TextRetrievalFromPdfs("Manuale operativo iliad FTTH (1).pdf") as ret:
+    #     blocks = ret.get_text_elements()
+
+    with ImagesRetrievalFromPdf("Manuale operativo iliad FTTH (1).pdf") as ret:
+        images = ret.get_image_elements()
 
     elements = partition_pdf(
         filename=path + "Manuale operativo iliad FTTH (1).pdf",
@@ -134,52 +138,6 @@ if __name__ == '__main__':
     )
 
     google_llm_model = VertexAI(model_name="gemini-pro", temperature=0)
-
-    custom_template = \
-        """
-    
-        Your name is Skyler and you are the chatbot of Sky which is a big media company. Your job is to answer
-    
-        questions using documentation provided in italian in the context below.
-    
-        To answer the "QUESTION" made by a customer:
-    
-        1: Use only the information in the "CONTEXT" for answering.
-    
-        2: Keep in mind that the titles in the context can represent more versions of a product or an error so if there is ambiguity ask the customer to specify which one is the case. 
-    
-        2: If you don't know the answer, just say that you don't know and don't try to make up an answer.
-    
-        3: The context is made of a title and a problem description with its solution or some FAQs.
-    
-        4: If requested to solve a problem provide guidance making sure that the customer follows every step and waits the necessary time before proceeding with the next one. If the customer didn't specify it, ask for the error code!
-    
-        5: Make sure to provide your evaluation in JSON format and ONLY the JSON using the keys specified in "RESPONSE".
-    
-        ----
-    
-        CONTEXT:
-    
-        {context}
-    
-        ----
-    
-        QUESTION:
-    
-        {question}
-    
-        ----
-    
-        Your answer must be in italian!
-    
-        Respond in a complete way and keep your "tone" very conversational and playful.
-    
-        RESPONSE:
-    
-        1. bot_bubbles: Divide the answer in an array of strings, that are consecutive messages from a chatbot.
-    
-    
-        """
 
     # chain = RetrievalQAWithSourcesChain.from_llm(
     #     llm=google_llm_model,
