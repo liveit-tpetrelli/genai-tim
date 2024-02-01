@@ -44,7 +44,8 @@ class TextRetrievalFromPdf:
     def __get_document(path: str):
         return fitz.Document(path)
 
-    def get_text_elements(self):
+    def get_text_elements(self) -> List[TextElement]:
+        text_elements = []
         elements = partition_pdf(
             filename=os.path.join(self.source_dir, self.source_filename),
             # strategy='hi_res',
@@ -52,9 +53,18 @@ class TextRetrievalFromPdf:
 
         )
 
-        return chunk_by_title(
+        chunks = chunk_by_title(
             elements=elements,
             combine_text_under_n_chars=2000,
             max_characters=6000,
             new_after_n_chars=5500,
             overlap=500,)
+
+        for chunk in chunks:
+            text_elements.append(TextElement(
+                content=chunk.text,
+                metadata={'source': chunk.metadata.fields['filename'],
+                          'page_number': chunk.metadata.fields['page_number']}
+            ))
+
+        return text_elements
