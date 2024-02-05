@@ -186,3 +186,4 @@ __pycache_
 libraries/data_processing/__pycache__/ImagesRetrievalFromPdf.cpython-310.pyc
 libraries/data_processing/__pycache__/TextRetrievalFromPdfs.cpython-310.pyc
 libraries/data_processing/__pycache__/TextRetrievalFromPdfs.cpython-310.pyc
+*.pyc
