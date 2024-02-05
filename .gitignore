@@ -1,7 +1,9 @@
-configs
+configs/secrets
+configs/app_configs.json
 db
 documents
 venv
+.chainlit
 
 # Created by https://www.toptal.com/developers/gitignore/api/pycharm+all,pycharm
 # Edit at https://www.toptal.com/developers/gitignore?templates=pycharm+all,pycharm
@@ -180,7 +182,7 @@ fabric.properties
 # End of https://www.toptal.com/developers/gitignore/api/pycharm+all,pycharm
 
 
-
+__pycache_
 libraries/data_processing/__pycache__/ImagesRetrievalFromPdf.cpython-310.pyc
 libraries/data_processing/__pycache__/TextRetrievalFromPdfs.cpython-310.pyc
 libraries/data_processing/__pycache__/TextRetrievalFromPdfs.cpython-310.pyc

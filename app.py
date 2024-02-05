@@ -1,16 +1,17 @@
 import os
+import chainlit as cl
 
 from langchain.chains import ConversationalRetrievalChain
 from langchain.memory import ConversationBufferMemory
-from langchain_core.prompts import PromptTemplate
-from langchain.prompts import load_prompt
 from langchain_google_vertexai import (VertexAI,
                                        VertexAIEmbeddings)
 from langchain_community.vectorstores.chroma import Chroma
 
 from configs.app_configs import AppConfigs
 from configs.prompts.PromptsRetrieval import PromptsRetrieval
+
 from libraries.splitters.TokenElementSplitter import TokenElementSplitter
+
 
 app_configs = AppConfigs()
 gcloud_credentials = app_configs.configs.GoogleApplicationCredentials.google_app_credentials_path
@@ -23,7 +24,8 @@ vertex_embeddings_model = VertexAIEmbeddings(model_name="textembedding-gecko@001
 google_llm_model = VertexAI(model_name="gemini-pro", temperature=0)
 
 
-def start_chatbot():
+@cl.on_chat_start
+async def on_chat_start():
     if not os.listdir(chroma_persist_directory):
         token_splitter = TokenElementSplitter(source_filename="Manuale operativo iliad FTTH (1).pdf")
         token_splits = token_splitter.split_document()
@@ -56,26 +58,18 @@ def start_chatbot():
         chain_type="stuff",
         verbose=True
     )
-    return chain
+
+    cl.user_session.set("chain", chain)
 
 
-if __name__ == '__main__':
+@cl.on_message
+async def on_message(message: cl.Message):
+    conversational_chain = cl.user_session.get("chain")  # type: ConversationalRetrievalChain
 
-    want_to_chat = True
-    qa_chain = start_chatbot()
+    result = await conversational_chain.acall(message.content, callbacks=[cl.AsyncLangchainCallbackHandler()])
+    sources = result["source_documents"]
+    # answer = result['answer'] + get_sources(sources)
+    answer = result['answer']
 
-    while want_to_chat:
-        user_input = input("You: ")
-        if user_input.lower() != "quit":
-            question = user_input
-            res = qa_chain.invoke({"question": question})
-            answer = res['answer']
-            print(f"Chatbot: {answer}")
-        else:
-            want_to_chat = False
+    await cl.Message(content=str(answer)).send()
 
-    print("""
-    |----------------------------------------------------------|
-    |                 CHATBOT SESSION TERMINATED.              |
-    |----------------------------------------------------------|
-    """)

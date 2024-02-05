@@ -1,0 +1,14 @@
+{
+    "name": "condense_question",
+    "input_variables": [
+        "chat_history",
+        "question"
+    ],
+    "input_types": {},
+    "output_parser": null,
+    "partial_variables": {},
+    "template": "Given the following chat history and a follow up question, rephrase the follow up input question to be a standalone question.\n\nChat History:####\n\n{chat_history}\n####\n\nFollow Up Input: ####\n\n{question}\n####\n\nStandalone question:",
+    "template_format": "f-string",
+    "validate_template": false,
+    "_type": "prompt"
+}
