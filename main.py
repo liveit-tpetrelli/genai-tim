@@ -24,6 +24,8 @@ google_llm_model = VertexAI(model_name="gemini-pro", temperature=0)
 
 
 def start_chatbot():
+    token_splitter = TokenElementSplitter(source_filename="Manuale operativo iliad FTTH (1).pdf")
+    print(token_splitter.split_document())
     if not os.listdir(chroma_persist_directory):
         token_splitter = TokenElementSplitter(source_filename="Manuale operativo iliad FTTH (1).pdf")
         token_splits = token_splitter.split_document()

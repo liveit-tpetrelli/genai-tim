@@ -4,6 +4,7 @@ from typing import List
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.documents import Document
 
+from libraries.data_processing.ImagesRetrievalFromPdf import ImagesRetrievalFromPdf
 from libraries.data_processing.TablesRetrievalFromPdf import TablesRetrievalFromPdf, TableElement
 from libraries.data_processing.TextRetrievalFromPdf import TextRetrievalFromPdf, TextElement
 
@@ -45,6 +46,7 @@ class TokenElementSplitter:
 
         with TextRetrievalFromPdf(self.source_filename) as text_ret:
             texts = text_ret.get_text_elements()
+            # texts = text_ret.get_text_elements_by_titles()
             docs_from_texts = get_docs_from_text(texts)
             docs.extend(docs_from_texts)
 
@@ -55,11 +57,12 @@ class TokenElementSplitter:
                 docs.extend(docs_from_tables)
 
         # TODO - To retrieve images
-        # if include_images:
-        #   with ImagesRetrievalFromPdf(self.source_filename) as ret:
-        #       images = ret.get_image_elements()
-        #       docs_from_images = get_docs_from_images(images)
-        #       docs.extend(docs_from_images)
+        if include_images:
+            with ImagesRetrievalFromPdf(self.source_filename) as ret:
+                images = ret.get_image_elements()
+                print(images)
+                # docs_from_images = get_docs_from_images(images)
+                # docs.extend(docs_from_images)
 
         token_splitter = TokenTextSplitter(
             chunk_size=chunk_size,

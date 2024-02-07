@@ -21,7 +21,7 @@ prompt_retrieval = PromptsRetrieval()
 
 chroma_persist_directory = os.path.join(*app_configs.configs.ChromaConfigs.path)
 vertex_embeddings_model = VertexAIEmbeddings(model_name="textembedding-gecko@001")
-google_llm_model = VertexAI(model_name="gemini-pro", temperature=0)
+google_llm_model = VertexAI(model_name="gemini-pro", temperature=0, streaming=True)
 
 
 @cl.on_chat_start
@@ -67,7 +67,7 @@ async def on_message(message: cl.Message):
     conversational_chain = cl.user_session.get("chain")  # type: ConversationalRetrievalChain
 
     result = await conversational_chain.acall(message.content, callbacks=[cl.AsyncLangchainCallbackHandler()])
-    sources = result["source_documents"]
+    # sources = result["source_documents"]
     # answer = result['answer'] + get_sources(sources)
     answer = result['answer']
 
