@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Any, Dict, List
+from typing import List
 
 from fitz import fitz, Document, Page
 from unstructured.chunking import chunk_elements
@@ -8,6 +8,7 @@ from unstructured.chunking.title import chunk_by_title
 from unstructured.partition.pdf import partition_pdf
 
 from configs.app_configs import AppConfigs
+from libraries.data_processing.RetrievedElement import RetrievedElement
 
 app_configs = AppConfigs()
 documents_dir_path = os.path.join(*app_configs.configs.Documents.path)
@@ -17,62 +18,8 @@ def get_document(path: str):
     return fitz.Document(path)
 
 
-class TextElement:
-    content: str
-    metadata: Dict[str, Any]
-
-    def __init__(self, content: str, metadata: Dict[str, Any]):
-        self.content = content
-        self.metadata = metadata
-
-
-def get_toc_custom():
+class TextElement(RetrievedElement):
     pass
-
-
-import re
-
-
-def extract_titles(table_of_contents):
-    # Use regex to find titles with numbering
-    regex_numbering = re.compile(r'^(\d+(\.\d+)*)\s+')
-    regex_title = re.compile(r'\b([^\d]+)\b')
-
-    lines = table_of_contents.split('\n')
-
-    titles = []
-    current_numbering = ""
-    previous_numbering = ""
-
-    for line in lines:
-        # Try to match numbering
-        numbering_match = regex_numbering.match(line)
-        if numbering_match:
-            current_numbering = numbering_match.group(1)
-            if not previous_numbering:
-                # First-level title
-                titles.append(f"{current_numbering.strip()} {line[len(current_numbering):].strip()}")
-            else:
-                # Subsequent-level title
-                titles.append(f"{previous_numbering.strip()}{current_numbering.strip()} {line[len(current_numbering):].strip()}")
-            previous_numbering = current_numbering
-            continue
-
-        # Try to match title
-        title_match = regex_title.search(line)
-        if title_match:
-            # Remove series of dots from the title
-            title_text = re.sub(r'\.{2,}', '', title_match.group(1)).strip()
-            if not previous_numbering:
-                # First-level title without numbering
-                titles.append(title_text)
-            else:
-                # Subsequent-level title without numbering
-                titles.append(f"{previous_numbering.strip()}{title_text}")
-
-    return titles
-
-
 
 
 class TextRetrievalFromPdf:
@@ -118,6 +65,8 @@ class TextRetrievalFromPdf:
 
         return text_elements
 
+    # Experimental get_text_elements_by_titles method
+    '''
     def get_text_elements_by_titles(self) -> List[TextElement]:
         elements = partition_pdf(
             filename=os.path.join(self.source_dir, self.source_filename),
@@ -186,3 +135,4 @@ class TextRetrievalFromPdf:
         print(chunks)
 
         # Es: for title in toc: chunk = search_for_title(title); append(chunk)
+    '''

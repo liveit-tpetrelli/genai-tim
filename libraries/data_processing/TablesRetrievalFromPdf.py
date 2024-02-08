@@ -10,6 +10,7 @@ from unstructured.chunking.title import chunk_by_title
 from unstructured.partition.pdf import partition_pdf
 
 from configs.app_configs import AppConfigs
+from libraries.data_processing.RetrievedElement import RetrievedElement
 
 app_configs = AppConfigs()
 documents_dir_path = os.path.join(*app_configs.configs.Documents.path)
@@ -19,13 +20,8 @@ def get_document(path: str):
     return pdfplumber.open(path)
 
 
-class TableElement:
-    content: str
-    metadata: Dict[str, Any]
-
-    def __init__(self, content: str, metadata: Dict[str, Any]):
-        self.content = content
-        self.metadata = metadata
+class TableElement(RetrievedElement):
+    pass
 
 
 class TablesRetrievalFromPdf:

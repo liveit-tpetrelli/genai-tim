@@ -4,31 +4,20 @@ from typing import List
 from langchain.text_splitter import TokenTextSplitter
 from langchain_core.documents import Document
 
-from libraries.data_processing.ImagesRetrievalFromPdf import ImagesRetrievalFromPdf
+from libraries.data_processing.ImagesRetrievalFromPdf import ImagesRetrievalFromPdf, ImageElement
+from libraries.data_processing.RetrievedElement import RetrievedElement
 from libraries.data_processing.TablesRetrievalFromPdf import TablesRetrievalFromPdf, TableElement
 from libraries.data_processing.TextRetrievalFromPdf import TextRetrievalFromPdf, TextElement
 
 
-def get_docs_from_text(texts: List[TextElement]) -> List[Document]:
+def get_docs_from_elements(elements: List[RetrievedElement]) -> List[Document]:
     docs = []
-    for text in texts:
+    for element in elements:
         docs.append(Document(
-            page_content=text.content,
-            metadata=text.metadata
+            page_content=element.content,
+            metadata=element.metadata
         ))
     return docs
-
-
-def get_docs_from_tables(tables: List[TableElement]) -> List[Document]:
-    docs = []
-    for table in tables:
-        docs.append(Document(
-            page_content=table.content,
-            metadata=table.metadata
-        ))
-    return docs
-
-# def get_docs_from_images(self):
 
 
 class TokenElementSplitter:
@@ -47,22 +36,20 @@ class TokenElementSplitter:
         with TextRetrievalFromPdf(self.source_filename) as text_ret:
             texts = text_ret.get_text_elements()
             # texts = text_ret.get_text_elements_by_titles()
-            docs_from_texts = get_docs_from_text(texts)
+            docs_from_texts = get_docs_from_elements(texts)
             docs.extend(docs_from_texts)
 
         if include_tables:
             with TablesRetrievalFromPdf(self.source_filename) as table_ret:
                 tables = table_ret.get_table_elements(max_characters=1000)
-                docs_from_tables = get_docs_from_tables(tables)
+                docs_from_tables = get_docs_from_elements(tables)
                 docs.extend(docs_from_tables)
 
-        # TODO - To retrieve images
         if include_images:
             with ImagesRetrievalFromPdf(self.source_filename) as ret:
                 images = ret.get_image_elements()
-                print(images)
-                # docs_from_images = get_docs_from_images(images)
-                # docs.extend(docs_from_images)
+                docs_from_images = get_docs_from_elements(images)
+                docs.extend(docs_from_images)
 
         token_splitter = TokenTextSplitter(
             chunk_size=chunk_size,
