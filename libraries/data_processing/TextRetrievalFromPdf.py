@@ -40,7 +40,11 @@ class TextRetrievalFromPdf:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.document.close()
 
-    def get_text_elements(self) -> List[TextElement]:
+    def get_text_elements(self,
+                          combine_text_under_n_chars: int = 2000,
+                          max_characters: int = 6000,
+                          new_after_n_chars: int = 5500,
+                          overlap: int = 500) -> List[TextElement]:
         text_elements = []
         elements = partition_pdf(
             filename=os.path.join(self.source_dir, self.source_filename),
@@ -51,10 +55,10 @@ class TextRetrievalFromPdf:
 
         chunks = chunk_by_title(
             elements=elements,
-            combine_text_under_n_chars=2000,
-            max_characters=6000,
-            new_after_n_chars=5500,
-            overlap=500,)
+            combine_text_under_n_chars=combine_text_under_n_chars,
+            max_characters=max_characters,
+            new_after_n_chars=new_after_n_chars,
+            overlap=overlap,)
 
         for chunk in chunks:
             text_elements.append(TextElement(

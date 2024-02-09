@@ -37,47 +37,46 @@ class ImageElement(RetrievedElement):
     pass
 
 
+def summarize_image(image_path: str) -> str:
+    llm_model = ChatVertexAI(model_name="gemini-pro-vision", temperature=0)
+    message = HumanMessage(
+        content=[
+            {
+                "type": "text",
+                "text": prompt_retrieval.prompts["summary_image"].template,
+            },
+            {
+                "type": "image_url",
+                "image_url": {"url": f"{image_path}"}
+            },
+        ]
+    )
+    summary = llm_model.invoke([message])
+    return summary.content
+
+
 class ImagesRetrievalFromPdf:
     source_filename: str
     source_dir: str
     document: Document
     pages: List[Page]
     figures_storage: str
-    llm_model: BaseChatModel
 
     def __init__(self,
                  source_filename: str,
                  source_dir: str = documents_dir_path,
-                 figures_storage: str = figures_storage_path,
-                 llm: BaseChatModel = ChatVertexAI(model_name="gemini-pro-vision", temperature=0)):
+                 figures_storage: str = figures_storage_path):
         self.source_filename = source_filename
         self.source_dir = source_dir
         self.document = get_document(path=os.path.join(source_dir, source_filename))
         self.pages = [*self.document.pages()]
         self.figures_storage = figures_storage
-        self.llm_model = llm
 
     def __enter__(self):
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.document.close()
-
-    def summarize_image(self, image_path: str) -> str:
-        message = HumanMessage(
-            content=[
-                {
-                    "type": "text",
-                    "text": prompt_retrieval.prompts["summary_image"].template,
-                },
-                {
-                    "type": "image_url",
-                    "image_url": {"url": f"{image_path}"}
-                },
-            ]
-        )
-        summary = self.llm_model.invoke([message])
-        return summary.content
 
     def get_image_elements(self):
         summaries = []
@@ -100,7 +99,7 @@ class ImagesRetrievalFromPdf:
                     pix.save(image_path)
 
                     # Invoke LLM to get a summary
-                    summary = self.summarize_image(image_path=image_path)
+                    summary = summarize_image(image_path=image_path)
 
                     summaries.append(ImageElement(
                             content=summary.strip(),
