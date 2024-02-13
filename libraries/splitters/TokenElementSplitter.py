@@ -29,8 +29,7 @@ class TokenElementSplitter:
     def split_document(self,
                        chunk_size: int = 2000,
                        chunk_overlap: int = 0,
-                       include_tables: bool = True,
-                       include_images: bool = True):
+                       include_tables: bool = True):
         docs = []
 
         with TextRetrievalFromPdf(self.source_filename) as text_ret:
@@ -45,11 +44,11 @@ class TokenElementSplitter:
                 docs_from_tables = get_docs_from_elements(tables)
                 docs.extend(docs_from_tables)
 
-        if include_images:
-            with ImagesRetrievalFromPdf(self.source_filename) as ret:
-                images = ret.get_image_elements()
-                docs_from_images = get_docs_from_elements(images)
-                docs.extend(docs_from_images)
+        # if include_images:
+        #     with ImagesRetrievalFromPdf(self.source_filename) as ret:
+        #         images = ret.get_image_elements()
+        #         docs_from_images = get_docs_from_elements(images)
+        #         docs.extend(docs_from_images)
 
         token_splitter = TokenTextSplitter(
             chunk_size=chunk_size,

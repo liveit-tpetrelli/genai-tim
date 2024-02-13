@@ -1,3 +1,4 @@
+import base64
 import os
 import re
 from typing import Any, Dict, List
@@ -25,16 +26,44 @@ prompt_retrieval = PromptsRetrieval()
 gcloud_credentials = app_configs.configs.GoogleApplicationCredentials.google_app_credentials_path
 os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(*gcloud_credentials.dir_path, gcloud_credentials.file_name)
 
-documents_dir_path = os.path.join(*app_configs.configs.Documents.path)
-figures_storage_path = os.path.join(*app_configs.configs.Documents.Images.path)
+_DOCUMENTS_DIR_PATH = os.path.join(*app_configs.configs.Documents.path)
+_FIGURES_STORAGE_PATH = os.path.join(*app_configs.configs.Documents.Images.path)
+_IMAGE_SUMMARIES_PATH = os.path.join(*app_configs.configs.Documents.ImageSummaries.path, app_configs.configs.Documents.ImageSummaries.file_name)
+
 
 
 def get_document(path: str):
     return fitz.Document(path)
 
 
+def encode_image(image_path: str) -> str:
+    with open(image_path, "rb") as image_file:
+        return base64.b64encode(image_file.read()).decode('utf-8')
+
+
 class ImageElement(RetrievedElement):
-    pass
+    base64_image: str
+
+    def __init__(self, content: str, metadata: Dict[str, Any], base64_image: str):
+        super().__init__(content, metadata)
+        self.base64_image = base64_image
+
+
+def save_summaries(base64_images: List[str], summaries: List[str]) -> bool:
+    import json
+
+    try:
+        json_doc = [{
+            'image_base64': i,
+            'summary': s,
+        } for i, s in list(zip(base64_images, summaries))]
+
+        with open(os.path.join(_IMAGE_SUMMARIES_PATH), 'w') as fp:
+            json.dump(json_doc, fp)
+            return True
+
+    except Exception:
+        return False
 
 
 def summarize_image(image_path: str) -> str:
@@ -64,8 +93,8 @@ class ImagesRetrievalFromPdf:
 
     def __init__(self,
                  source_filename: str,
-                 source_dir: str = documents_dir_path,
-                 figures_storage: str = figures_storage_path):
+                 source_dir: str = _DOCUMENTS_DIR_PATH,
+                 figures_storage: str = _FIGURES_STORAGE_PATH):
         self.source_filename = source_filename
         self.source_dir = source_dir
         self.document = get_document(path=os.path.join(source_dir, source_filename))
@@ -78,8 +107,8 @@ class ImagesRetrievalFromPdf:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.document.close()
 
-    def get_image_elements(self):
-        summaries = []
+    def get_image_elements(self, save_result: bool = True):
+        image_elements = []
         for page in self.pages:  # iterate over pdf pages
             image_list = page.get_images()
 
@@ -101,13 +130,19 @@ class ImagesRetrievalFromPdf:
                     # Invoke LLM to get a summary
                     summary = summarize_image(image_path=image_path)
 
-                    summaries.append(ImageElement(
-                            content=summary.strip(),
-                            metadata={'location': image_path, 'file_name': file_name,
-                                      'ext': ext, 'index': image_index,
-                                      'source': self.document.name, 'page': page.number})
+                    image_elements.append(ImageElement(
+                        content=summary.strip(),
+                        base64_image=encode_image(image_path),
+                        metadata={'location': image_path, 'file_name': file_name,
+                                  'ext': ext, 'index': image_index,
+                                  'source': self.document.name, 'page': page.number})
                     )
-                except ImageRetrievalException as e:
+                except Exception as e:
                     print(e.args[0])
 
-        return summaries
+        if save_result:
+            base64_images = [elem.base64_image for elem in image_elements]
+            image_summaries = [elem.content for elem in image_elements]
+            _ = save_summaries(base64_images, image_summaries)
+
+        return image_elements

@@ -1,0 +1,3 @@
+class NoImagesRetrievedException(IndexError):
+    pass
+

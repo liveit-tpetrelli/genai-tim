@@ -11,7 +11,7 @@ from langchain_community.vectorstores.chroma import Chroma
 from configs.app_configs import AppConfigs
 from configs.prompts.PromptsRetrieval import PromptsRetrieval
 from libraries.splitters.TokenElementSplitter import TokenElementSplitter
-from libraries.vectorstores.MultiModalVectorstore import MultiModalVectorstore
+from libraries.retrievals.MultiModalRetrieval import MultiModalRetrieval
 
 app_configs = AppConfigs()
 gcloud_credentials = app_configs.configs.GoogleApplicationCredentials.google_app_credentials_path
@@ -63,8 +63,6 @@ def start_chatbot():
 
 
 if __name__ == '__main__':
-
-    multi = MultiModalVectorstore()
 
     want_to_chat = True
     qa_chain = start_chatbot()
