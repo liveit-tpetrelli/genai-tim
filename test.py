@@ -14,7 +14,9 @@ from langchain_google_vertexai import VertexAI, ChatVertexAI
 
 from configs.app_configs import AppConfigs
 from configs.prompts.PromptsRetrieval import PromptsRetrieval
-from libraries.chains.multi_modal_rag_chain import multi_modal_rag_chain, conversational_multi_modal_rag_chain
+from libraries.chains.multi_modal_rag_chain import multi_modal_rag_chain, conversational_multi_modal_rag_chain, \
+    invoke_multi_modal_chain
+from libraries.data_processing.ImagesRetrievalFromPdf import ImagesRetrievalFromPdf
 from libraries.retrievals.MultiModalRetrieval import MultiModalRetrieval
 from langchain.memory import ConversationBufferMemory
 
@@ -100,39 +102,59 @@ from langchain.memory import ConversationBufferMemory
 
 
 def run_test():
-    multi = MultiModalRetrieval()
+    with ImagesRetrievalFromPdf("Manuale operativo iliad FTTH (1).pdf") as image_ret:
+        images = image_ret.get_image_elements()
+
+
+    multi_modal_retrieval = MultiModalRetrieval()
     # multi = MultiModalRetrieval(from_persistent=False)
 
     # chain = multi_modal_rag_chain(multi.get_retriever())
 
     memory = ConversationBufferMemory(return_messages=True)
-    memory.load_memory_variables({})
-    chain = conversational_multi_modal_rag_chain(multi.get_retriever(), memory)
+    chain = conversational_multi_modal_rag_chain(
+        retriever=multi_modal_retrieval.get_retriever(),
+        memory=memory,
+        get_source_documents=True
+    )
+    response = invoke_multi_modal_chain(
+        question="descrivi la schermata login",
+        chain=chain
+    )
 
-    inputs1 = "Come è fatta la schermata di login di ILIAD?"
-    # inputs1 = {"input": "hi im bob"}
-    response = chain.invoke(inputs1)
-    print(response)
-
-    memory.save_context({"input": inputs1}, {"output": response.content})
-    memory.load_memory_variables({})
-    print(memory)
-
-    # inputs = {"input": "whats my name"}
-    inputs = "A cosa serve il bottone rosso?"
-    response = chain.invoke(inputs)
-    print(response)
+    print(response["answer"])
 
 
-    # async for chunk in chain.astream(
-    #         {"question": message.content},
-    #         config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
-    # ):
-    #     await msg.stream_token(chunk)
-
-    # print(chain.invoke("Come è fatta la schermata di login di ILIAD?"))
-
-    # print(chain.invoke("Cosa devo fare se dopo la sostituzione della CPE in scenario attivo (MI-TO-BO) la nuova CPE rimane bloccata in step 6-7?"))
+    # response = invoke_multi_modal_chain(multi.get_retriever(), memory, "quali sono i modem iliad?")
+    # print(response)
+    #
+    #
+    # chain = conversational_multi_modal_rag_chain(multi.get_retriever(), memory)
+    #
+    # inputs1 = "Come è fatta la schermata di login di ILIAD?"
+    # # inputs1 = {"input": "hi im bob"}
+    # response = chain.invoke(inputs1)
+    # print(response)
+    #
+    # memory.save_context({"input": inputs1}, {"output": response})
+    # memory.load_memory_variables({})
+    # print(memory)
+    #
+    # # inputs = {"input": "whats my name"}
+    # inputs = "A cosa serve il bottone rosso?"
+    # response = chain.invoke(inputs)
+    # print(response)
+    #
+    #
+    # # async for chunk in chain.astream(
+    # #         {"question": message.content},
+    # #         config=RunnableConfig(callbacks=[cl.LangchainCallbackHandler()]),
+    # # ):
+    # #     await msg.stream_token(chunk)
+    #
+    # # print(chain.invoke("Come è fatta la schermata di login di ILIAD?"))
+    #
+    # # print(chain.invoke("Cosa devo fare se dopo la sostituzione della CPE in scenario attivo (MI-TO-BO) la nuova CPE rimane bloccata in step 6-7?"))
 
 
 

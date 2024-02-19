@@ -1,16 +1,20 @@
 import base64
 import binascii
 import os
+from operator import itemgetter
+from typing import Dict, Any
 
-from langchain_core.messages import HumanMessage, SystemMessage
+from langchain_core.language_models import BaseChatModel
+from langchain_core.memory import BaseMemory
+from langchain_core.messages import HumanMessage
 from langchain_core.output_parsers import StrOutputParser
-from langchain_core.prompts import MessagesPlaceholder, ChatPromptTemplate
+from langchain_core.retrievers import BaseRetriever
 from langchain_core.runnables import RunnableLambda, RunnablePassthrough
 from langchain_google_vertexai import ChatVertexAI
 
 from configs.app_configs import AppConfigs
 from configs.prompts.PromptsRetrieval import PromptsRetrieval
-from libraries.exceptions.NoImagesRetrievedException import NoImagesRetrievedException
+from libraries.exceptions.CheckImageRelevancyException import CheckImageRelevancyException
 
 app_configs = AppConfigs()
 gcloud_credentials = app_configs.configs.GoogleApplicationCredentials.google_app_credentials_path
@@ -35,7 +39,6 @@ def __split_image_text_types(retrieved_documents):
 
 
 def __history_prompt_func(data):
-    print(data)
     if data['history']:
         messages = [
             HumanMessage(
@@ -66,7 +69,8 @@ def __img_prompt_func(dictionary):
                         "type": "text",
                         "text": prompt_retrieval.prompts["combine_docs_and_images"].format(
                             context=context,
-                            question=dictionary['condensed_question']),
+                            question=dictionary['condensed_question'],)
+                            # few_shots="    \n\n".join(prompt_retrieval.few_shots_examples)),
                     },
                     {
                         "type": "image_url",
@@ -104,20 +108,19 @@ def multi_modal_rag_chain(retriever):
 
     # Define the RAG pipeline
     chain = (
-        {
-            "context": retriever | RunnableLambda(__split_image_text_types),
-            "question": RunnablePassthrough(),
-        }
-        | RunnableLambda(__img_prompt_func)
-        | model
-        | StrOutputParser()
+            {
+                "context": retriever | RunnableLambda(__split_image_text_types),
+                "question": RunnablePassthrough(),
+            }
+            | RunnableLambda(__img_prompt_func)
+            | model
+            | StrOutputParser()
     )
 
     return chain
 
 
-def conversational_multi_modal_rag_chain(retriever, memory):
-
+def __conversational_multi_modal_rag_chain(retriever, memory):
     from operator import itemgetter
     # Initialize the multi-modal Large Language Model with specific parameters
     model = ChatVertexAI(model_name="gemini-pro-vision", temperature=0, streaming=True)
@@ -135,3 +138,82 @@ def conversational_multi_modal_rag_chain(retriever, memory):
     )
 
     return chain
+
+
+def invoke_multi_modal_chain(question, chain):
+    response = {}
+
+    context = chain["retrieval_chain"].invoke(question)
+    response["answer"] = chain["chain"].invoke({"context": context, "question": question})
+
+    if context["images"]:
+        response["image"] = context["images"][0]
+
+    chain["memory"].save_context({"input": question}, {"output": response["answer"]})
+    chain["memory"].load_memory_variables({})
+
+    return response
+
+
+def conversational_multi_modal_rag_chain(
+        retriever: BaseRetriever,
+        memory: BaseMemory,
+        get_source_documents: bool = False,
+        llm_model: BaseChatModel = ChatVertexAI(model_name="gemini-pro-vision", temperature=0, streaming=True)
+) -> Dict[str, Any]:
+
+    result = {
+        "memory": memory,
+        "retriever": retriever
+    }
+
+    if get_source_documents:
+        retrieval_chain = (retriever | RunnableLambda(__split_image_text_types))
+        chain = (
+            {
+                "context": itemgetter("context") | RunnablePassthrough(),
+                "question": itemgetter("question") | RunnablePassthrough()
+            }
+            | RunnablePassthrough.assign(
+                history=RunnableLambda(memory.load_memory_variables) | itemgetter("history"))
+            | RunnableLambda(__history_prompt_func)
+            | RunnableLambda(__img_prompt_func)
+            | llm_model
+            | StrOutputParser()
+        )
+
+        result |= {
+            "retrieval_chain": retrieval_chain,
+            "chain": chain,
+        }
+    else:
+        chain = __conversational_multi_modal_rag_chain(retriever, memory)
+        result |= {
+            "chain": chain,
+        }
+
+    return result
+
+
+def check_image_relevancy(text: str, image: str) -> None:
+    llm_model = ChatVertexAI(model_name="gemini-pro-vision", temperature=0)
+    message = HumanMessage(
+        content=[
+            {
+                "type": "text",
+                "text": prompt_retrieval.prompts["check_image_relevancy"].format(
+                    text=text
+                ),
+            },
+            {
+                "type": "image_url",
+                "image_url": {
+                    "url": f"data:image/jpeg;base64,{image}"
+                }
+            },
+        ]
+    )
+    relevancy = llm_model.invoke([message])
+    print(relevancy)
+    if "FALSE" in relevancy.content:
+        raise CheckImageRelevancyException("The image retrieved is not relevant and will not be displayed.")

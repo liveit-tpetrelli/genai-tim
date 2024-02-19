@@ -1,0 +1,13 @@
+{
+    "name": "condense_question",
+    "input_variables": [
+        "text"
+    ],
+    "input_types": {},
+    "output_parser": null,
+    "partial_variables": {},
+    "template": "Image to be a Quality and Assurance assistant. Your job is to evaluate the job done by a chatbot. Precisely, you must say if this IMAGE adds relevant information to the following TEXT message.\n\n----\n\nTEXT message: {text}\n\n----\n\nRemember that the TEXT message is always written in italian.\n\nTo understand when an IMAGE is useful and adds relevant information, follow these GUIDELINES:\n\t- This image is relevant, if in the TEXT message there are some reference to this image, such as \"come si vede dall'immagine\" or \"l'immagine mostra\", etc.\n\t- This image is relevant, if the image is strongly related to the TEXT message. For example, the TEXT message is talking about a parrot and the image shows a parrot portrait, or the TEXT message is describing a web form and the image represent the web form discussed.\n\t- This image is always NOT relevant, if it is an icon, a pictogram, a logo or a background.\n\t- This image is NOT relevant, if the image content does not match the TEXT message content.\n\t- This image is NOT relevant, if no ones of these GUIDELINES is applicable.\n\nYour answer must be \"TRUE\" if the IMAGE is relevant and \"FALSE\" when the IMAGE is NOT relevant.\n\nBoolean Response:",
+    "template_format": "f-string",
+    "validate_template": false,
+    "_type": "prompt"
+}

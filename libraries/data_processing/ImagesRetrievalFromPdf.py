@@ -29,6 +29,8 @@ os.environ["GOOGLE_APPLICATION_CREDENTIALS"] = os.path.join(*gcloud_credentials.
 _DOCUMENTS_DIR_PATH = os.path.join(*app_configs.configs.Documents.path)
 _FIGURES_STORAGE_PATH = os.path.join(*app_configs.configs.Documents.Images.path)
 _IMAGE_SUMMARIES_PATH = os.path.join(*app_configs.configs.Documents.ImageSummaries.path, app_configs.configs.Documents.ImageSummaries.file_name)
+_IMAGE_SUMMARIES_PATH_v2 = os.path.join(*app_configs.configs.Documents.ImageSummaries.path, app_configs.configs.Documents.ImageSummariesV2.file_name)
+_FILTER_CODE = app_configs.configs.Documents.ImageSummariesV2.filter_code
 
 
 
@@ -58,7 +60,8 @@ def save_summaries(base64_images: List[str], summaries: List[str]) -> bool:
             'summary': s,
         } for i, s in list(zip(base64_images, summaries))]
 
-        with open(os.path.join(_IMAGE_SUMMARIES_PATH), 'w') as fp:
+        # with open(os.path.join(_IMAGE_SUMMARIES_PATH), 'w') as fp:
+        with open(os.path.join(_IMAGE_SUMMARIES_PATH_v2), 'w') as fp:
             json.dump(json_doc, fp)
             return True
 
@@ -107,7 +110,7 @@ class ImagesRetrievalFromPdf:
     def __exit__(self, exc_type, exc_val, exc_tb):
         self.document.close()
 
-    def get_image_elements(self, save_result: bool = True):
+    def get_image_elements(self, save_result: bool = True, filter_useless_images: bool = True):
         image_elements = []
         for page in self.pages:  # iterate over pdf pages
             image_list = page.get_images()
@@ -139,6 +142,11 @@ class ImagesRetrievalFromPdf:
                     )
                 except Exception as e:
                     print(e.args[0])
+
+        if filter_useless_images:
+            image_elements = [image_element
+                              for image_element in image_elements
+                              if _FILTER_CODE not in image_element.content]
 
         if save_result:
             base64_images = [elem.base64_image for elem in image_elements]

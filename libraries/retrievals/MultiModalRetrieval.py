@@ -24,39 +24,13 @@ _CHROMA_PERSIST_DIRECTORY = os.path.join(*app_configs.configs.MultiChromaConfigs
 _LOCAL_FILE_STORE_PATH = os.path.join(*app_configs.configs.LocalFileStoreConfigs.path)
 _FIGURES_STORAGE_PATH = os.path.join(*app_configs.configs.Documents.Images.path)
 _IMAGE_SUMMARIES_PATH = os.path.join(*app_configs.configs.Documents.ImageSummaries.path, app_configs.configs.Documents.ImageSummaries.file_name)
+_IMAGE_SUMMARIES_PATH_v2 = os.path.join(*app_configs.configs.Documents.ImageSummaries.path, app_configs.configs.Documents.ImageSummariesV2.file_name)
 _COLLECTION_NAME = app_configs.configs.MultiChromaConfigs.default_collection_name
 _ID_KEY = app_configs.configs.MultiChromaConfigs.default_docstore_key
 
-
-def encode_image(image_path: str) -> str:
-    with open(image_path, "rb") as image_file:
-        return base64.b64encode(image_file.read()).decode('utf-8')
-
-
-def decode_image(base64_image: str) -> bytes:
-    return base64.b64decode(base64_image)
-
-
-def save_summaries(base64_images: List[str], summaries: List[str]) -> bool:
-    import json
-
-    try:
-        json_doc = [{
-            'image_base64': i,
-            'summary': s,
-        } for i, s in list(zip(base64_images, summaries))]
-
-        with open(os.path.join(_IMAGE_SUMMARIES_PATH), 'w') as fp:
-            json.dump(json_doc, fp)
-            return True
-
-    except Exception:
-        return False
-
-
 def load_summaries() -> (List[str], List[str]):
     import json
-    with open(_IMAGE_SUMMARIES_PATH) as json_file:
+    with open(_IMAGE_SUMMARIES_PATH_v2) as json_file:
         image_summaries = json.load(json_file)
     summaries, base64_images = [], []
     for summary in image_summaries:
